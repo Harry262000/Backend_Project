@@ -13,17 +13,32 @@ class Food(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     protein = db.Column(db.Float, nullable=False)
-    carbohydrate = db.Column(db.Float, nullable=False)  # Rename to 'carbohydrate' to match database
+    carbohydrate = db.Column(db.Float, nullable=False) 
     fat = db.Column(db.Float, nullable=False)
     calories = db.Column(db.Float, nullable=False) 
 
-@app.route('/')
-def index():
-    return render_template('home.html')
+# Define a model for the log_data table
+class LogData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    entry_date = db.Column(db.Date, nullable=False)
 
-@app.route('/view')
+@app.route('/', methods=['GET', 'POST'])
+def index(): # Retrieve all food items from the database
+    if request.method == 'POST':
+        date_str = request.form.get("date")
+        if date_str:  # Check if the date string is not empty
+            entry_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            log_data = LogData(entry_date=entry_date)
+            db.session.add(log_data)
+            db.session.commit()
+    log = LogData.query.order_by(LogData.entry_date.desc()).all()
+    return render_template('home.html', log=log)
+
+@app.route('/view/')
 def view():
-    return render_template('day.html')
+   # Fetch log entries and pass them to the template
+    log_entries = LogData.query.all()
+    return render_template('day.html', log_entries=log_entries)
 
 @app.route('/food', methods=['GET', 'POST'])
 def food():
